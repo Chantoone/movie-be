@@ -1,6 +1,6 @@
 from dataclasses import Field
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel
 
@@ -30,12 +30,12 @@ class MovieType(BaseModel):
 class MovieDetail(BaseModel):
     id_movie: int
     name: str
-    actor: str
-    director: str
+    actor: Optional[str]
+    director: Optional[str]
     type: List[str]
-    time : int
+    time : Optional[int]
     poster: str
-    overview: str
+    overview: Optional[str]
     state: str
     class Config:
         orm_mode = True

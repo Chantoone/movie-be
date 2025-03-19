@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, Float, DateTime, Enu
 from sqlalchemy.orm import relationship
 from app.core.database import Base
 from pydantic import EmailStr
-
+from sqlalchemy.schema import PrimaryKeyConstraint,ForeignKeyConstraint
 
 class Cinema(Base):
     __tablename__ = 'cinema'
@@ -23,12 +23,16 @@ class Room(Base):
 
 class Seat(Base):
     __tablename__ = 'seat'
-    id_seat = Column(Integer, primary_key=True, autoincrement=True)
-    id_room = Column(Integer, ForeignKey('room.id_room', onupdate="CASCADE"), nullable=False)
     name = Column(String(50), nullable=False)
-    type = Column(String(50))
+    id_seat = Column(Integer, nullable=False)  # Không tự động tăng, vì xác định bởi id_room
+    id_room = Column(Integer, ForeignKey('room.id_room', ondelete="CASCADE", onupdate="CASCADE"), nullable=False)
+    type = Column(String(50), nullable=True)
 
-    room = relationship("Room", backref="seats")
+    # Khóa chính tổng hợp gồm `id_seat` và `id_room`
+    __table_args__ = (PrimaryKeyConstraint('id_seat', 'id_room'),)
+
+    # Quan hệ với Room (thực thể mạnh)
+    room = relationship("Room", backref="seats", passive_deletes=True)
 
 
 class Showtime(Base):
@@ -37,8 +41,28 @@ class Showtime(Base):
     time_begin = Column(DateTime, nullable=False)
     id_room = Column(Integer, ForeignKey('room.id_room', onupdate="CASCADE"), nullable=False)
     id_movie = Column(Integer, ForeignKey('movie.id_movie', onupdate="CASCADE"), nullable=False)
+    
     room = relationship("Room", backref="showtimes")
 
+
+
+class SeatStatus(Base):
+    __tablename__ = 'seat_status'
+
+    id_seat = Column(Integer, nullable=False)
+    id_room = Column(Integer, ForeignKey("room.id_room"), nullable=False)
+    id_showtime = Column(Integer, ForeignKey('showtime.id_showtime', ondelete="CASCADE"), nullable=False)
+    state = Column(Enum('AVAILABLE', 'BOOKED', 'RESERVED', name="seat_state"), nullable=False, default='AVAILABLE')
+
+    __table_args__ = (
+        PrimaryKeyConstraint('id_seat', 'id_room', 'id_showtime'),
+        ForeignKeyConstraint(['id_seat', 'id_room'], ['seat.id_seat', 'seat.id_room'], ondelete="CASCADE")
+    )
+
+    # Quan hệ với bảng `Showtime`
+    showtime = relationship("Showtime", backref="seat_status")
+    seat = relationship("Seat", backref="seat_status")
+    room = relationship("Room", backref="seat_status")
 
 class Movie(Base):
     __tablename__ = 'movie'
@@ -64,13 +88,15 @@ class Ticket(Base):
     __tablename__ = 'ticket'
     id_ticket = Column(Integer, primary_key=True, autoincrement=True)
     price = Column(Float, nullable=False)
-    id_seat = Column(Integer, ForeignKey('seat.id_seat', onupdate="CASCADE"), nullable=False)
+
+    id_seat = Column(Integer, nullable=False)
+    id_room = Column(Integer, nullable=False)  # ✅ Thêm id_room vào ticket
     id_showtime = Column(Integer, ForeignKey('showtime.id_showtime', onupdate="CASCADE"), nullable=False)
 
-    seat = relationship("Seat", backref="tickets")
-    showtime = relationship("Showtime", backref="tickets")
-
-
+    # 🔥 Khóa ngoại tham chiếu đến Seat với id_seat và id_room
+    __table_args__ = (
+        ForeignKeyConstraint(['id_seat', 'id_room'], ['seat.id_seat', 'seat.id_room'], onupdate="CASCADE"),
+    )
 class Receipt(Base):
     __tablename__ = 'receipt'
     id_receipt = Column(Integer, primary_key=True, autoincrement=True)

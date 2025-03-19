@@ -1,0 +1,32 @@
+from dataclasses import Field
+from datetime import datetime,date,time
+from typing import List
+from typing import Optional
+from pydantic import BaseModel
+
+class Cinema(BaseModel):
+    id_cinema: int
+    name: str
+    class Config:
+        orm_mode = True
+class ListCinema(BaseModel):
+    cinemas: List[Cinema]
+    class Config:
+        orm_mode = True
+class ListDate(BaseModel):
+    id_movie: int
+    id_cinema: int
+    dates: List[date]
+    class Config:
+        orm_mode = True
+class ListTime(BaseModel):
+    id_movie: int
+    id_cinema: int
+    date: date
+    times: List[time]
+    id_showtime: int
+    class Config:
+        orm_mode = True
+
+
+
