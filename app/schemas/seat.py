@@ -27,3 +27,16 @@ class ListFood(BaseModel):
     foods: List[Food]
     class Config:
         orm_mode = True
+class CreateSeat(BaseModel):
+    id_seat: int
+    id_room:int
+    name: str
+    type:str
+    class Config:
+        orm_mode = True
+
+class ListCreateSeat(BaseModel):
+    seats: List[CreateSeat]
+    total_seat:int
+    class Config:
+        orm_mode = True

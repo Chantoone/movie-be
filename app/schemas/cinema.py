@@ -7,6 +7,7 @@ from pydantic import BaseModel
 class Cinema(BaseModel):
     id_cinema: int
     name: str
+    address: str
     class Config:
         orm_mode = True
 class ListCinema(BaseModel):
@@ -28,5 +29,14 @@ class ListTime(BaseModel):
     class Config:
         orm_mode = True
 
+class CreateCinema(BaseModel):
 
+    name: str
+    address: str
+    class Config:
+        orm_mode = True
+class ListCreateCinema(BaseModel):
+    cinemas: List[CreateCinema]
+    class Config:
+        orm_mode = True
 

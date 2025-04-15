@@ -39,3 +39,24 @@ class MovieDetail(BaseModel):
     state: str
     class Config:
         orm_mode = True
+class MovieBase(BaseModel):
+    name: str
+    time: Optional[int] = None
+    age_limit: str  # "NONE", "T13", "T18"
+    director: Optional[str] = None
+    actor: Optional[str] = None
+    poster: Optional[str] = None
+    banner: Optional[str] = None
+    time_release: Optional[datetime] = None
+    overview: Optional[str] = None
+    state: str  # "COMING_SOON", "NOW_SHOWING", "ENDED"
+    id_type: List[int]  # danh sách id_type từ bảng Type
+
+class CreateMovie(MovieBase):
+    pass
+
+class MovieResponse(MovieBase):
+    id_movie: int
+
+    class Config:
+        orm_mode = True

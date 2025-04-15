@@ -72,3 +72,36 @@ async def get_details(id: int,db: Session = Depends(get_db) ):
         "state":movie[0].state,
     }
     return response
+@router.post("/",response_model=MovieResponse,status_code=status.HTTP_201_CREATED)
+def create_movie(movie: CreateMovie,db:Session=Depends(get_db)):
+    new_movie = model.Movie(**movie.model_dump(exclude={"id_type"}))
+    db.add(new_movie)
+    db.commit()
+    db.refresh(new_movie)
+    for type_id in movie.id_type:
+        db.add(model.MovieType(id_movie=new_movie.id_movie,id_type=type_id))
+    db.commit()
+    return new_movie
+@router.put("/{id}", response_model=MovieResponse,status_code=status.HTTP_200_OK)
+def update_movie(id:int,movie:CreateMovie,db:Session=Depends(get_db)):
+    movie_update=db.query(model.Movie).filter(model.Movie.id_movie==id)
+    if not movie_update.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Movie not found")
+    movie_update.update(movie.model_dump(exclude={"id_type"}), synchronize_session=False)
+    db.commit()
+    db.query(model.MovieType).filter(model.MovieType.id_movie == id).delete()
+    # Tạo liên kết mới
+    for type_id in movie.id_type:
+        db.add(model.MovieType(id_movie=id, id_type=type_id))
+    db.commit()
+
+    return movie_update.first()
+
+@router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_movie(id:int,db:Session=Depends(get_db)):
+    movie = db.query(model.Movie).filter(model.Movie.id_movie==id).first()
+    if not movie:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Movie not found")
+    db.query(model.MovieType).filter(model.MovieType.id_movie == id).delete()
+    db.delete(movie)
+    db.commit()

@@ -23,4 +23,24 @@ class UserLogin(BaseModel):
 class UserRoles(BaseModel):
     id: int
     id_role:int
+    class Config:
+        orm_mode = True
+class User(BaseModel):
+    name: str
+    email: str
+    phone_number: str
+    id_user:int
+    class Config:
+        orm_mode = True
 
+class ListUsers(BaseModel):
+    users: List[User]
+    class Config:
+        orm_mode = True
+
+class ReviseUser(BaseModel):
+    name: str
+    email: EmailStr
+    phone_number: str
+    class Config:
+        orm_mode = True

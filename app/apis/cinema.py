@@ -2,6 +2,8 @@ from http.client import HTTPResponse
 
 from fastapi import FastAPI,Response,status,HTTPException,Depends,APIRouter
 from sqlalchemy.orm import Session
+from sqlalchemy.orm.sync import update
+
 from app.core.database import get_db
 from sqlalchemy.sql import func
 from sqlalchemy import cast, Time
@@ -16,6 +18,11 @@ from datetime import date,time,datetime
 router=APIRouter(
     prefix="/cinema",tags=["Cinema"]
 )
+@router.get("/all",status_code=status.HTTP_200_OK,response_model=ListCinema)
+def get_all_cinema(db:Session=Depends(get_db)):
+    cinemas = db.query(model.Cinema).all()
+    return {"cinemas": cinemas}
+
 @router.get("/get_cinema/{id_movie}",status_code=status.HTTP_200_OK,response_model=ListCinema)
 def get_cinema(id_movie:int,db: Session= Depends(get_db)):
     cinemas=(
@@ -66,5 +73,30 @@ def get_time(id_movie:int,id_cinema:int,date:str,db: Session=Depends(get_db)):
 
     )
 
+@router.post("/",status_code=status.HTTP_201_CREATED,response_model=CreateCinema)
+def create_cinema(cinema:CreateCinema,db: Session=Depends(get_db)):
+    new_cinema=model.Cinema(name=cinema.name,address=cinema.address)
+    db.add(new_cinema)
+    db.commit()
+    db.refresh(new_cinema)
+    return new_cinema
+@router.put("/{id}",status_code=status.HTTP_200_OK,response_model=CreateCinema)
+def revise_cinema(id:int,cinema:CreateCinema,db: Session=Depends(get_db)):
+    update_cinema=db.query(model.Cinema).filter(model.Cinema.id_cinema==id)
+    f_cinema=update_cinema.first()
+    if not f_cinema:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    else:
+        update_cinema.update(cinema.model_dump(),synchronize_session=False)
+        db.commit()
 
-
+    return update_cinema.first()
+@router.delete("/{id}",status_code=status.HTTP_204_NO_CONTENT)
+def delete_cinema(id:int,db: Session=Depends(get_db)):
+    delete_cinema=db.query(model.Cinema).filter(model.Cinema.id_cinema==id)
+    if not delete_cinema.first():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    else:
+        delete_cinema.delete(synchronize_session=False)
+        db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

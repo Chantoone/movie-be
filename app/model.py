@@ -3,7 +3,7 @@ from sqlalchemy.orm import relationship
 from app.core.database import Base
 from pydantic import EmailStr
 from sqlalchemy.schema import PrimaryKeyConstraint,ForeignKeyConstraint
-
+from sqlalchemy import DateTime, text
 class Cinema(Base):
     __tablename__ = 'cinema'
     id_cinema = Column(Integer, primary_key=True, autoincrement=True)
@@ -41,7 +41,12 @@ class Showtime(Base):
     time_begin = Column(DateTime, nullable=False)
     id_room = Column(Integer, ForeignKey('room.id_room', onupdate="CASCADE"), nullable=False)
     id_movie = Column(Integer, ForeignKey('movie.id_movie', onupdate="CASCADE"), nullable=False)
-    
+    seat_status = relationship(
+        "SeatStatus",
+        backref="showtime",
+        cascade="all, delete-orphan",  # <--- Quan trọng
+        passive_deletes=True  # <--- Quan trọng khi dùng ondelete="CASCADE"
+    )
     room = relationship("Room", backref="showtimes")
 
 
@@ -60,9 +65,9 @@ class SeatStatus(Base):
     )
 
     # Quan hệ với bảng `Showtime`
-    showtime = relationship("Showtime", backref="seat_status")
+
     seat = relationship("Seat", backref="seat_status")
-    room = relationship("Room", backref="seat_status")
+
 
 class Movie(Base):
     __tablename__ = 'movie'
@@ -86,38 +91,49 @@ class Movie(Base):
 
 class Ticket(Base):
     __tablename__ = 'ticket'
+
     id_ticket = Column(Integer, primary_key=True, autoincrement=True)
     price = Column(Float, nullable=False)
 
+    receipt_id = Column(Integer, ForeignKey("receipt.id_receipt", onupdate="CASCADE"), nullable=False)
     id_seat = Column(Integer, nullable=False)
-    id_room = Column(Integer, nullable=False)  # ✅ Thêm id_room vào ticket
+    id_room = Column(Integer, ForeignKey('room.id_room', onupdate="CASCADE"), nullable=False)
     id_showtime = Column(Integer, ForeignKey('showtime.id_showtime', onupdate="CASCADE"), nullable=False)
 
-    # 🔥 Khóa ngoại tham chiếu đến Seat với id_seat và id_room
+    # Khóa ngoại kết hợp đến seat (id_seat, id_room)
     __table_args__ = (
-        ForeignKeyConstraint(['id_seat', 'id_room'], ['seat.id_seat', 'seat.id_room'], onupdate="CASCADE"),
+        ForeignKeyConstraint(
+            ['id_seat', 'id_room'],
+            ['seat.id_seat', 'seat.id_room'],
+            onupdate="CASCADE"
+        ),
     )
+
+    receipt = relationship("Receipt", back_populates="tickets")
+    room = relationship("Room", backref="tickets")
+    seat = relationship("Seat", backref="tickets")
+    showtime = relationship("Showtime", backref="tickets")
 class Receipt(Base):
     __tablename__ = 'receipt'
     id_receipt = Column(Integer, primary_key=True, autoincrement=True)
-    time = Column(DateTime, nullable=False)
+    time = Column(DateTime, nullable=False, server_default=text("now()"))
     method_pay = Column(String(50))
-    state = Column(Enum('PENDING', 'PAID', 'CANCELED', name="payment_state"), nullable=False, default='PENDING')
-    id_ticket = Column(Integer, ForeignKey('ticket.id_ticket', onupdate="CASCADE"), nullable=False)
+    state = Column(Enum('PENDING', 'PAID', 'CANCELED', name="payment_state"), nullable=False, default='PAID')
+    # id_ticket = Column(Integer, ForeignKey('ticket.id_ticket', onupdate="CASCADE"), nullable=False)
     id_food = Column(Integer, ForeignKey('food.id_food', onupdate="CASCADE"), nullable=True)
     id_user = Column(Integer, ForeignKey('user.id_user', onupdate="CASCADE"), nullable=False)
 
-    ticket = relationship("Ticket", backref="receipts")
     food = relationship("Food", backref="receipts")
     user = relationship("User", backref="receipts")
-
+    tickets = relationship("Ticket", back_populates="receipt")
+    receipt_foods = relationship("ReceiptFood", back_populates="receipt", cascade="all, delete-orphan")
 
 class Food(Base):
     __tablename__ = 'food'
     id_food = Column(Integer, primary_key=True, autoincrement=True)
     name = Column(String(255), nullable=False)
     price = Column(Float, nullable=False)
-
+    receipt_foods = relationship("ReceiptFood", back_populates="food")
 
 class User(Base):
     __tablename__ = 'user'
@@ -160,4 +176,11 @@ class  MovieType(Base):
     id_movie = Column(Integer, ForeignKey('movie.id_movie', onupdate="CASCADE"), primary_key=True)
     movie = relationship("Movie", backref="movie_type")
     type = relationship("Type", backref="movie_type")
+class ReceiptFood(Base):
+    __tablename__ = "receipt_food"
+    id_receipt = Column(Integer, ForeignKey('receipt.id_receipt', ondelete="CASCADE"), primary_key=True)
+    id_food = Column(Integer, ForeignKey('food.id_food', ondelete="CASCADE"), primary_key=True)
+    quantity = Column(Integer, nullable=False, default=1)
 
+    receipt = relationship("Receipt", back_populates="receipt_foods")
+    food = relationship("Food", back_populates="receipt_foods")

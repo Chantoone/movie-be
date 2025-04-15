@@ -12,6 +12,10 @@ from app.ultils import *
 router=APIRouter(
     prefix="/seat",tags=["Seats"]
 )
+@router.get("/all",status_code=status.HTTP_200_OK,response_model=ListCreateSeat)
+def get_all(db:Session=Depends(get_db)):
+    seats=db.query(model.Seat).all()
+    return {"seats": seats,"total_seat":len(seats)}
 @router.get("/{id_showtime}",status_code=status.HTTP_200_OK,response_model=ListSeat)
 def get_seats(id_showtime:int,db:Session=Depends(get_db)):
     result=(db.query(model.SeatStatus)
