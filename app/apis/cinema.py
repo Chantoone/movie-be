@@ -20,7 +20,7 @@ router=APIRouter(
 )
 @router.get("/all",status_code=status.HTTP_200_OK,response_model=ListCinema)
 def get_all_cinema(db:Session=Depends(get_db)):
-    cinemas = db.query(model.Cinema).all()
+    cinemas = db.query(model.Cinema).order_by(model.Cinema.id_cinema.asc()).all()
     return {"cinemas": cinemas}
 
 @router.get("/get_cinema/{id_movie}",status_code=status.HTTP_200_OK,response_model=ListCinema)

@@ -22,6 +22,16 @@ class ListRoom(BaseModel):
     rooms:List[Room]
     class Config:
         orm_mode = True
+class RoomResponse(BaseModel):
+    name: str
+    type: str
+    id_cinema: int
+    id_room: int
+    total_seat:int
+class ListRoomResponse(BaseModel):
+    rooms:List[RoomResponse]
+    class Config:
+        orm_mode = True
 class RiveRoom(BaseModel):
     name: str
     type: str

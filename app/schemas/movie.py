@@ -1,5 +1,5 @@
 from dataclasses import Field
-from datetime import datetime
+from datetime import datetime,date
 from typing import List, Optional
 
 from pydantic import BaseModel
@@ -42,7 +42,7 @@ class MovieDetail(BaseModel):
 class MovieBase(BaseModel):
     name: str
     time: Optional[int] = None
-    age_limit: str  # "NONE", "T13", "T18"
+    age_limit: str = "NONE"  # "NONE", "T13", "T18"
     director: Optional[str] = None
     actor: Optional[str] = None
     poster: Optional[str] = None
@@ -58,5 +58,17 @@ class CreateMovie(MovieBase):
 class MovieResponse(MovieBase):
     id_movie: int
 
+    class Config:
+        orm_mode = True
+class MovieAll(BaseModel):
+    id_movie: int
+    name: str
+    time: Optional[int] = None
+    time_release: Optional[datetime] = None
+    state: str
+
+class ListMoviesAll(BaseModel):
+    movies: List[MovieAll]
+    total:int
     class Config:
         orm_mode = True

@@ -12,4 +12,4 @@ __all__ =["ListMovies","Movie","MovieBaner","ListMovieBanners","MovieDetail",
           ,"ListDate","ListTime","Seat","ListSeat","Food","ListFood","ListUsers","User","CreateCinema","ListCreateCinema"
     ,"CreateRoom","ListRoom","MovieBase","CreateMovie","MovieResponse","CreateShowtime","ShowtimeResponse"
           ,"ShowtimeWithDetails","CreateSeat","Room","ListCreateSeat","RiveRoom",
-          "CreateTicket","CreateReceipt","FoodOrder","ReceiptDetail"]
+          "CreateTicket","CreateReceipt","FoodOrder","ReceiptDetail","ListMoviesAll","ListRoomResponse","RoomResponse"]

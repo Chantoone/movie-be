@@ -1,3 +1,4 @@
+from dns.e164 import query
 from fastapi import FastAPI,Response,status,HTTPException,Depends,APIRouter
 from sqlalchemy.orm import Session
 from app.core.database import get_db
@@ -10,9 +11,15 @@ from app.ultils import *
 router=APIRouter(
     prefix="/movie",tags=["Movies"]
 )
+@router.get("/all",status_code=status.HTTP_200_OK,response_model=ListMoviesAll)
+async def get_all_movies(db:Session=Depends(get_db)):
+    movies=db.query(model.Movie).order_by(model.Movie.state.asc()).all()
+    if not movies:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return {"movies":movies,"total":len(movies)}
 
 @router.get("/",status_code=status.HTTP_200_OK, response_model=ListMovies)
-def get_movies(state: Optional[str] = None, type_id: Optional[int] = None, db: Session = Depends(get_db)):
+def get_movies_by_state_id(state: Optional[str] = None, type_id: Optional[int] = None, db: Session = Depends(get_db)):
     query = db.query(model.Movie)
     if type_id is not None:
         query=query.join(model.MovieType).filter(model.MovieType.id_type==type_id)
@@ -74,6 +81,7 @@ async def get_details(id: int,db: Session = Depends(get_db) ):
     return response
 @router.post("/",response_model=MovieResponse,status_code=status.HTTP_201_CREATED)
 def create_movie(movie: CreateMovie,db:Session=Depends(get_db)):
+    movie.age_limit="NONE"
     new_movie = model.Movie(**movie.model_dump(exclude={"id_type"}))
     db.add(new_movie)
     db.commit()
@@ -82,9 +90,13 @@ def create_movie(movie: CreateMovie,db:Session=Depends(get_db)):
         db.add(model.MovieType(id_movie=new_movie.id_movie,id_type=type_id))
     db.commit()
     return new_movie
-@router.put("/{id}", response_model=MovieResponse,status_code=status.HTTP_200_OK)
+@router.put("/revise/{id}", response_model=MovieResponse,status_code=status.HTTP_200_OK)
 def update_movie(id:int,movie:CreateMovie,db:Session=Depends(get_db)):
     movie_update=db.query(model.Movie).filter(model.Movie.id_movie==id)
+    tmp=movie_update.first()
+    movie.banner=tmp.banner
+    movie.poster=tmp.poster
+    movie.time_release=tmp.time_release
     if not movie_update.first():
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Movie not found")
     movie_update.update(movie.model_dump(exclude={"id_type"}), synchronize_session=False)

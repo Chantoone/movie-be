@@ -18,15 +18,7 @@ def get_room_type(id_showtime:int,db:Session()=Depends(get_db)):
             .filter(model.SeatStatus.id_showtime == id_showtime)) .first()
 
     return {"type": room.type}
-@router.get("/all",status_code=status.HTTP_200_OK,response_model=ListRoom)
-def get_all_rooms(db:Session()=Depends(get_db)):
-    result=db.query(model.Room).all()
-    if not result:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
-    else:
-        return {"rooms":result}
-
-@router.post("/",status_code=status.HTTP_201_CREATED,response_model=Room)
+@router.post("/create",status_code=status.HTTP_201_CREATED,response_model=Room)
 def create_room(room:CreateRoom,db:Session()=Depends(get_db)):
     new_room=model.Room(name=room.name,type=room.type,id_cinema=room.id_cinema)
     db.add(new_room)
@@ -45,6 +37,42 @@ def create_room(room:CreateRoom,db:Session()=Depends(get_db)):
         db.add(new_seat)
     db.commit()
     return new_room
+@router.get("/all",status_code=status.HTTP_200_OK,response_model=ListRoom)
+def get_all_rooms(db:Session()=Depends(get_db)):
+    result=db.query(model.Room).all()
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    else:
+        return {"rooms":result}
+@router.get("/by_cinema",status_code=status.HTTP_200_OK,response_model=ListRoomResponse)
+def get_rooms_by_cinema(id_cinema:int,db:Session()=Depends(get_db)):
+    result= (
+        db.query(model.Room.id_room,
+                 model.Room.name,
+                 model.Room.type,
+                 model.Room.id_cinema,
+                 func.count(model.Seat.id_seat).label("total_seat")
+        )
+        .join(model.Seat,model.Seat.id_room == model.Room.id_room)
+        .filter(model.Room.id_cinema == id_cinema)
+        .group_by(model.Room.id_room)
+        .all()
+
+    )
+    if not result:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
+    return {"rooms":[
+        {
+            "id_room":r.id_room,
+            "name":r.name,
+            "type":r.type,
+            "id_cinema":r.id_cinema,
+            "total_seat":r.total_seat
+        }
+        for r in result
+    ]}
+
+
 @router.delete("/{id}",status_code=status.HTTP_204_NO_CONTENT)
 def delete_room(id:int,db:Session()=Depends(get_db)):
     delete_room = db.query(model.Room).filter(model.Room.id_room==id)

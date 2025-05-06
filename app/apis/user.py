@@ -13,7 +13,7 @@ router=APIRouter(
 )
 @router.get("/all",status_code=status.HTTP_200_OK,response_model=ListUsers)
 def get_Users(db:Session=Depends(get_db)):
-    query = db.query(model.User).filter(model.User.id_role==1).all()
+    query = db.query(model.User).filter(model.User.id_role == 1).order_by(model.User.id_user.asc()) .all()
     return {"users":query}
 @router.delete("/{id}",status_code=status.HTTP_204_NO_CONTENT)
 def delete_User(id:int,db:Session=Depends(get_db)):
