@@ -6,7 +6,9 @@ from app.core.database import get_db
 from app.schemas import *
 from app import model
 from typing import Optional
+from app.schemas.movie import PageableMovies
 from app.ultils import *
+from math import ceil
 
 router=APIRouter(
     prefix="/movie",tags=["Movies"]
@@ -17,6 +19,59 @@ async def get_all_movies(db:Session=Depends(get_db)):
     if not movies:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND)
     return {"movies":movies,"total":len(movies)}
+
+
+@router.get("/pageable", status_code=status.HTTP_200_OK, response_model=PageableMovies)
+def get_pageable_movies(
+    page: int = 1, 
+    size: int = 10, 
+    state: Optional[str] = None, 
+    type_id: Optional[int] = None, 
+    db: Session = Depends(get_db)
+):
+    """
+    Lấy danh sách phim có phân trang.
+    
+    Parameters:
+    - page: Số trang (bắt đầu từ 1)
+    - size: Số lượng phim mỗi trang
+    - state: Trạng thái phim ("COMING_SOON", "NOW_SHOWING", "ENDED")
+    - type_id: ID của thể loại phim
+    """
+    # Đảm bảo tham số hợp lệ
+    if page < 1:
+        page = 1
+    if size < 1:
+        size = 10
+        
+    # Tạo query cơ bản
+    query = db.query(model.Movie)
+    
+    # Áp dụng bộ lọc nếu có
+    if type_id is not None:
+        query = query.join(model.MovieType).filter(model.MovieType.id_type == type_id)
+    
+    if state is not None:
+        query = query.filter(model.Movie.state == state)
+    
+    # Đếm tổng số phim phù hợp với bộ lọc
+    total_items = query.count()
+    
+    # Tính tổng số trang
+    total_pages = ceil(total_items / size)
+    
+    # Lấy danh sách phim cho trang hiện tại
+    movies = query.offset((page - 1) * size).limit(size).all()
+    
+    # Trả về kết quả
+    return {
+        "movies": movies,
+        "total": total_items,
+        "page": page,
+        "size": size,
+        "total_pages": total_pages
+    }
+
 
 @router.get("/",status_code=status.HTTP_200_OK, response_model=ListMovies)
 def get_movies_by_state_id(state: Optional[str] = None, type_id: Optional[int] = None, db: Session = Depends(get_db)):
@@ -117,3 +172,4 @@ def delete_movie(id:int,db:Session=Depends(get_db)):
     db.query(model.MovieType).filter(model.MovieType.id_movie == id).delete()
     db.delete(movie)
     db.commit()
+

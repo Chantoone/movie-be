@@ -17,16 +17,20 @@ class ListMovies(BaseModel):
     movies: List[Movie]
     class Config:
         orm_mode = True
+
 class MovieBaner(BaseModel):
     banner: str
     id_movie: int
     class Config:
         orm_mode = True
+
 class ListMovieBanners(BaseModel):
     movies: List[MovieBaner]
+
 class MovieType(BaseModel):
     id_movie: int
     id_type: int
+
 class MovieDetail(BaseModel):
     id_movie: int
     name: str
@@ -39,6 +43,7 @@ class MovieDetail(BaseModel):
     state: str
     class Config:
         orm_mode = True
+
 class MovieBase(BaseModel):
     name: str
     time: Optional[int] = None
@@ -60,6 +65,7 @@ class MovieResponse(MovieBase):
 
     class Config:
         orm_mode = True
+
 class MovieAll(BaseModel):
     id_movie: int
     name: str
@@ -70,5 +76,15 @@ class MovieAll(BaseModel):
 class ListMoviesAll(BaseModel):
     movies: List[MovieAll]
     total:int
+    class Config:
+        orm_mode = True
+
+class PageableMovies(BaseModel):
+    movies: List[Movie]
+    total: int
+    page: int
+    size: int
+    total_pages: int
+    
     class Config:
         orm_mode = True
