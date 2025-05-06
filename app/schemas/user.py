@@ -1,6 +1,6 @@
 from dataclasses import Field
 from datetime import datetime
-from typing import List
+from typing import List, Optional
 
 from pydantic import BaseModel,EmailStr
 class UserRegister(BaseModel):
@@ -42,5 +42,15 @@ class ReviseUser(BaseModel):
     name: str
     email: EmailStr
     phone_number: str
+    class Config:
+        orm_mode = True
+
+class PageableUsers(BaseModel):
+    users: List[User]
+    total: int
+    page: int
+    size: int
+    total_pages: int
+    
     class Config:
         orm_mode = True
