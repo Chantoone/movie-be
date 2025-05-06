@@ -1,6 +1,6 @@
 from pydantic import BaseModel
 from typing import List
-from datetime import datetime
+from datetime import datetime,date,time
 class FoodOrder(BaseModel):
     id_food: int
     quantity: int
@@ -44,3 +44,13 @@ class ReceiptDetail(BaseModel):
     total_amount: float
     class Config:
         orm_mode = True
+class ListReceipts(BaseModel):
+    movie_name:str
+    date_begin:date
+    time_begin:time
+    cinema_name:str
+    id_receipt:int
+    seats:list[str]
+    class Config:
+        orm_mode = True
+

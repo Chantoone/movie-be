@@ -6,7 +6,7 @@ from sqlalchemy import cast, Time
 from app.model import Showtime
 from app.schemas import *
 from app import model
-from typing import Optional
+from typing import Optional, List
 from app.ultils import *
 
 from datetime import date,time,datetime
@@ -82,3 +82,35 @@ def get_receipt(receipt_id:int,db:Session=Depends(get_db)):
         "tickets": tickets,
         "total_amount": total_amount
     }
+@router.get("/list/",status_code=status.HTTP_200_OK,response_model=List[ListReceipts])
+def get_List_Receipt(id_user:int,db:Session= Depends(get_db)):
+    receipts= (
+        db.query(model.Receipt.id_receipt,
+                 model.Movie.name.label("movie_name"),
+                 model.Showtime.time_begin,
+                 model.Cinema.name.label("cinema_name"),
+                 model.Seat.name.label("seat_name")
+        )
+        .join(model.Ticket,model.Ticket.receipt_id==model.Receipt.id_receipt)
+        .join(model.Showtime, model.Ticket.id_showtime==model.Showtime.id_showtime)
+        .join(model.Movie,model.Showtime.id_movie==model.Movie.id_movie)
+        .join(model.Room, model.Room.id_room == model.Ticket.id_room)
+        .join(model.Cinema, model.Cinema.id_cinema == model.Room.id_cinema)
+        .join(model.Seat, (model.Seat.id_seat == model.Ticket.id_seat) & (model.Seat.id_room == model.Ticket.id_room))
+        .filter(model.Receipt.id_user == id_user)
+        .all()
+
+    )
+    result={}
+    for id_receipt, movie_name, time_begin,cinema_name,seat_name in receipts:
+        if id_receipt not in result:
+            result[id_receipt] = {
+                "id_receipt": id_receipt,
+                "movie_name": movie_name,
+                "date_begin": time_begin.date(),
+                "time_begin": time_begin.time(),
+                "cinema_name": cinema_name,
+                "seats":[]
+            }
+            result[id_receipt]["seats"].append(seat_name)
+    return list(result.values())
