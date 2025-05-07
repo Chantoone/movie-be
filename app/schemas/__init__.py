@@ -11,5 +11,6 @@ __all__ =["ListMovies","Movie","MovieBaner","ListMovieBanners","MovieDetail",
           "UserLogin","UserRegister","UserOut","ReviseUser","Token","TokenData","accessToken","ListCinema"
           ,"ListDate","ListTime","Seat","ListSeat","Food","ListFood","ListUsers","User","CreateCinema","ListCreateCinema"
     ,"CreateRoom","ListRoom","MovieBase","CreateMovie","MovieResponse","CreateShowtime","ShowtimeResponse"
-          ,"ShowtimeWithDetails","CreateSeat","Room","ListCreateSeat","RiveRoom","ListReceipts","PageableUsers","PageableMovies",
-          "CreateTicket","CreateReceipt","FoodOrder","ReceiptDetail","ListMoviesAll","ListRoomResponse","RoomResponse"]
+          ,"ShowtimeWithDetails","CreateSeat","Room","ListCreateSeat","RiveRoom",
+          "CreateTicket","CreateReceipt","FoodOrder","ReceiptDetail","ListMoviesAll","ListRoomResponse","RoomResponse",
+          "PageableMovies", "PageableUsers"]

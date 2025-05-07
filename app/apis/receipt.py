@@ -8,7 +8,9 @@ from app.schemas import *
 from app import model
 from typing import Optional, List
 from app.ultils import *
-
+from fastapi.responses import JSONResponse
+import requests
+from  datetime import date
 from datetime import date,time,datetime
 router=APIRouter(prefix="/receipt",tags=['Receipt'])
 @router.post('/',status_code=status.HTTP_201_CREATED)
@@ -99,6 +101,7 @@ def get_List_Receipt(id_user:int,db:Session= Depends(get_db)):
         .join(model.Seat, (model.Seat.id_seat == model.Ticket.id_seat) & (model.Seat.id_room == model.Ticket.id_room))
         .filter(model.Receipt.id_user == id_user)
         .all()
+        .group_by(model.Showtime.id_showtime)
 
     )
     result={}
@@ -114,3 +117,24 @@ def get_List_Receipt(id_user:int,db:Session= Depends(get_db)):
             }
             result[id_receipt]["seats"].append(seat_name)
     return list(result.values())
+SEPAY_API_URL = "https://my.sepay.vn/userapi/transactions/list"
+AUTH_TOKEN = "PQGGQLOM0KSY3B3D1FJEZNEHRO5WKWYXZG2FACQQFHCVKYNAIYGRVLPB7XLV85LT"
+@router.get("/check-transaction/")
+def check_transaction(transaction_date_min: date , amount_in: int):
+    try:
+        response = requests.get(
+            SEPAY_API_URL,
+            headers={
+                "Authorization": f"Bearer {AUTH_TOKEN}",
+                "Content-Type": "application/json"
+            },
+            params={
+                "transaction_date_min": transaction_date_min,
+                "amount_in": amount_in
+            },
+            timeout=10
+        )
+        response.raise_for_status()
+        return JSONResponse(content=response.json())
+    except requests.RequestException as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
