@@ -1,7 +1,13 @@
 from dns.e164 import query
-from fastapi import FastAPI,Response,status,HTTPException,Depends,APIRouter
+from fastapi import FastAPI, Response, status, HTTPException, Depends, APIRouter, UploadFile, File
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+
+import os
+import shutil
+from fastapi.responses import JSONResponse
+from datetime import datetime
+from uuid import uuid4
 
 from app.schemas import *
 from app import model
@@ -122,6 +128,9 @@ async def get_details(id: int,db: Session = Depends(get_db) ):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Movie not found")
     types =[mt.type.name for m in movie for mt in m.movie_type]
 
+    # Make sure poster is never None to prevent validation error
+    poster = movie[0].poster if movie[0].poster is not None else ""
+    
     response ={
         "id_movie":id,
         "name":movie[0].name,
@@ -129,7 +138,7 @@ async def get_details(id: int,db: Session = Depends(get_db) ):
         "actor":movie[0].actor,
         "director":movie[0].director,
         "time":movie[0].time,
-        "poster":movie[0].poster,
+        "poster":poster,
         "overview":movie[0].overview,
         "state":movie[0].state,
     }
@@ -145,6 +154,7 @@ def create_movie(movie: CreateMovie,db:Session=Depends(get_db)):
         db.add(model.MovieType(id_movie=new_movie.id_movie,id_type=type_id))
     db.commit()
     return new_movie
+
 @router.put("/revise/{id}", response_model=MovieResponse,status_code=status.HTTP_200_OK)
 def update_movie(id:int,movie:CreateMovie,db:Session=Depends(get_db)):
     movie_update=db.query(model.Movie).filter(model.Movie.id_movie==id)
@@ -172,4 +182,57 @@ def delete_movie(id:int,db:Session=Depends(get_db)):
     db.query(model.MovieType).filter(model.MovieType.id_movie == id).delete()
     db.delete(movie)
     db.commit()
+
+# Create directory for storing uploaded files if it doesn't exist
+UPLOAD_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static", "uploads")
+POSTER_DIR = os.path.join(UPLOAD_DIR, "posters")
+BANNER_DIR = os.path.join(UPLOAD_DIR, "banners")
+
+# Ensure directories exist
+os.makedirs(POSTER_DIR, exist_ok=True)
+os.makedirs(BANNER_DIR, exist_ok=True)
+
+@router.post("/upload-poster", status_code=status.HTTP_200_OK)
+async def upload_poster(file: UploadFile = File(...)):
+    """
+    Upload a movie poster image and return the saved filename
+    """
+    try:
+        # Generate a unique filename with timestamp and uuid
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        unique_id = str(uuid4())[:8]
+        file_extension = os.path.splitext(file.filename)[1]
+        new_filename = f"poster_{timestamp}_{unique_id}{file_extension}"
+        
+        # Save the file
+        file_path = os.path.join(POSTER_DIR, new_filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        return {"poster": f"/static/uploads/posters/{new_filename}"}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                           detail=f"Error uploading poster: {str(e)}")
+
+@router.post("/upload-banner", status_code=status.HTTP_200_OK)
+async def upload_banner(file: UploadFile = File(...)):
+    """
+    Upload a movie banner image and return the saved filename
+    """
+    try:
+        # Generate a unique filename with timestamp and uuid
+        timestamp = datetime.now().strftime("%Y%m%d%H%M%S")
+        unique_id = str(uuid4())[:8]
+        file_extension = os.path.splitext(file.filename)[1]
+        new_filename = f"banner_{timestamp}_{unique_id}{file_extension}"
+        
+        # Save the file
+        file_path = os.path.join(BANNER_DIR, new_filename)
+        with open(file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)
+            
+        return {"banner": f"/static/uploads/banners/{new_filename}"}
+    except Exception as e:
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+                            detail=f"Error uploading banner: {str(e)}")
 
