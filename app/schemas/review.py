@@ -8,6 +8,7 @@ class ReviewBase(BaseModel):
 
 class CreateReview(ReviewBase):
     id_movie: int
+    id_user: int
     
 class UpdateReview(ReviewBase):
     pass

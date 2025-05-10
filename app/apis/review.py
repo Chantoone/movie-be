@@ -227,9 +227,7 @@ def create_review(review_data: CreateReview,
                   db: Session = Depends(get_db), 
                 #   current_user = Depends(get_current_user)
                 ):
-    """
-    Tạo đánh giá mới cho phim (yêu cầu đăng nhập)
-    """
+
     # Kiểm tra phim có tồn tại không
     movie = db.query(model.Movie).filter(model.Movie.id_movie == review_data.id_movie).first()
     if not movie:
@@ -251,7 +249,7 @@ def create_review(review_data: CreateReview,
         description=review_data.description,
         id_movie=review_data.id_movie,
         # id_user=current_user.id_user, 
-        id_user=db.query(model.User).first().id_user,  # Giả sử lấy user đầu tiên trong db
+        id_user=review_data.id_user
     )
     
     db.add(new_review)
